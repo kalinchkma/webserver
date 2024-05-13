@@ -5,12 +5,14 @@ import (
 	"net/http"
 )
 
-// metrics functions
-
 func (c *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Hits: %d", c.fileServerHits)))
+	h1 := fmt.Sprintf("<h1>Welcome, Chirpy Admin</h1>")
+	p := fmt.Sprintf("<p>Chirpy has been visited %d times!</p>", c.fileServerHits)
+	// w.Write([]byte(fmt.Sprintf("Hits: %d", c.fileServerHits)))
+	w.Write([]byte(h1))
+	w.Write([]byte(p))
 }
 
 func (c * apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {

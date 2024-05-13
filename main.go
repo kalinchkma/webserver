@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 type apiConfig struct {
@@ -22,9 +24,50 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /app/*", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filePath)))))
-	mux.HandleFunc("GET /healthz", handlerReadiness)
-	mux.HandleFunc("/metrics", apiCfg.handlerMetrics)
-	mux.HandleFunc("/reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /api/healthz", handlerReadiness)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("GET /api/reset", apiCfg.handlerReset)
+	mux.HandleFunc("POST /api/validate_chirp", func(w http.ResponseWriter, r *http.Request) {
+
+		// decoding json
+		type parameters struct {
+			Name string `json:"name"`
+			Age int `json:"age"`
+		}
+
+		decoder := json.NewDecoder(r.Body)
+		params := parameters{}
+		err := decoder.Decode(&params)
+
+		if err != nil {
+			log.Printf("Error decoding parameters: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+
+		// encoding json
+		type returnVals struct {
+			CreateAt time.Time `json:"created_at"`
+			ID int `json:"id"`
+		}
+
+		respBody := returnVals {
+			CreateAt: time.Now(),
+			ID: 123,
+		}
+
+		dat, err := json.Marshal(respBody)
+
+		if err != nil {
+			log.Printf("Error marshalling JSON: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+
+		w.Header().Set("Content-Type", "appication/json")
+		w.WriteHeader(200)
+		w.Write(dat)
+	})
 
 	// http server
 	srv := &http.Server{
